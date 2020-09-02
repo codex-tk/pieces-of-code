@@ -90,4 +90,53 @@ struct remove_at<I, T<Ts...>> {
     using type = typename _remove_at_impl<I, T<>, T<Ts...>>::type;
 };
 
+template <typename T>
+struct pop_back;
+template <typename T>
+struct pop_front;
+
+template <template <typename...> class T, typename... Ts>
+struct pop_back<T<Ts...>> {
+    using type = typename remove_at<sizeof...(Ts) - 1, T<Ts...>>::type;
+};
+
+template <template <typename...> class T, typename... Ts>
+struct pop_front<T<Ts...>> {
+    using type = typename remove_at<0, T<Ts...>>::type;
+};
+
+template <bool IsSame, typename Type, std::size_t N, typename T>
+struct _index_impl;
+
+template <std::size_t N,
+          typename Type,
+          template <typename...> class T,
+          typename... Ts>
+struct _index_impl<true, Type, N, T<Ts...>> {
+    static constexpr std::size_t value = N;
+};
+
+template <std::size_t N,
+          typename Type,
+          typename Head,
+          template <typename...> class T,
+          typename... Ts>
+struct _index_impl<false, Type, N, T<Head, Ts...>> {
+    static constexpr std::size_t value = _index_impl<std::is_same_v<Type, Head>, Type, N + 1, T<Ts...>>::value;
+};
+
+template <typename Type, typename T>
+struct type_index;
+
+template <typename Type,
+          typename Head,
+          template <typename...> class T,
+          typename... Ts>
+struct type_index<Type, T<Head, Ts...>> {
+    static constexpr std::size_t value = _index_impl<std::is_same_v<Type, Head>,
+                                          Type, 
+                                          0, 
+                                          T<Ts...>>::value;
+};
+
 #endif

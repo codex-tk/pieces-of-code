@@ -38,8 +38,8 @@ void mp_tests();
 
 TEST_CASE("mp_test", "[mp]") {
     mp_tests();
-    REQUIRE(type_index<int,type_list<float, int>>::value == 1);
-    REQUIRE(type_index<int,type_list<float, float, int>>::value == 2);
+    REQUIRE(type_index<int, type_list<float, int>>::value == 1);
+    REQUIRE(type_index<int, type_list<float, float, int>>::value == 2);
 }
 
 TEST_CASE("log_test", "[log]") {
@@ -117,6 +117,4 @@ void mp_tests(void) {
         std::is_same<
             pop_front<type_list<int, float, double>>::type,
             type_list<float, double>>::value);
-
-    
 }

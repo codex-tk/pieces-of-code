@@ -6,10 +6,13 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if (UNIX AND NOT APPLE)
 add_definitions( -Wall -std=c++17 -o2 -g -ggdb -fconcepts -DSOCKLEN_T=socklen_t )
+elseif(MSVC)
+add_definitions( /std:c++latest )
 endif()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 #file(GLOB_RECURSE SRCS ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp )
+file(GLOB SRCS ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp )
 
-add_executable(cpp_mp main.cpp)
+add_executable(cpp_mp ${SRCS})

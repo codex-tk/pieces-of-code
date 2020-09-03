@@ -24,7 +24,7 @@ public:
 template <typename T, typename U>
 Foo(T,U) -> Foo<std::common_type_t<T,U>>;
 
-TEST_CASE("cpp_language_feature", "CATD") {
+TEST_CASE("language_feature", "CTAD") {
     using namespace std;
     
     auto a = overloads{

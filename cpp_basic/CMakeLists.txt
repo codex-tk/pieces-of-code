@@ -14,5 +14,5 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 #file(GLOB_RECURSE SRCS ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp )
 file(GLOB SRCS ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp )
-
+message( "${SRCS}" )
 add_executable(cpp_mp ${SRCS})

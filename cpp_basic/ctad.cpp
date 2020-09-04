@@ -24,7 +24,7 @@ public:
 template <typename T, typename U>
 Foo(T,U) -> Foo<std::common_type_t<T,U>>;
 
-TEST_CASE("language_feature", "CTAD") {
+TEST_CASE("CTAD", "language_feature") {
 #ifdef WIN32
     using namespace std;
     

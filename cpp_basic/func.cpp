@@ -50,7 +50,7 @@ struct func<R(Ts...)> {
 
 TEST_CASE("func", "lib_feature") {
     func<void()> fn([] {
-        std::cout << "test inner" << std::endl;
+        //std::cout << "test inner" << std::endl;
     });
     func<void()> cp_fn{fn};
     REQUIRE(fn.is_construct);

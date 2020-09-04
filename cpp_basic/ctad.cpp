@@ -25,6 +25,7 @@ template <typename T, typename U>
 Foo(T,U) -> Foo<std::common_type_t<T,U>>;
 
 TEST_CASE("language_feature", "CTAD") {
+#ifdef WIN32
     using namespace std;
     
     auto a = overloads{
@@ -33,9 +34,9 @@ TEST_CASE("language_feature", "CTAD") {
         [](float) { cout << "(float)" << endl; },
     };
     
-    a();
+    a();    # operator() ambiguous
     a(42);
     a(42.0f);
-
-    auto f = Foo(1, 1.1);
+#endif
+    auto f = Foo(1, 1.1); (void)f;
 }

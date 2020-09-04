@@ -122,7 +122,11 @@ template <std::size_t N,
           template <typename...> class T,
           typename... Ts>
 struct _index_impl<false, Type, N, T<Head, Ts...>> {
-    static constexpr std::size_t value = _index_impl<std::is_same_v<Type, Head>, Type, N + 1, T<Ts...>>::value;
+    static constexpr std::size_t value = _index_impl<
+        std::is_same_v<Type, typename std::decay_t<Head>>,
+        Type,
+        N + 1,
+        T<Ts...>>::value;
 };
 
 template <typename Type, typename T>
@@ -133,10 +137,12 @@ template <typename Type,
           template <typename...> class T,
           typename... Ts>
 struct type_index<Type, T<Head, Ts...>> {
-    static constexpr std::size_t value = _index_impl<std::is_same_v<Type, Head>,
-                                          Type, 
-                                          0, 
-                                          T<Ts...>>::value;
+    using decay_type = typename std::decay_t<Type>;
+    static constexpr std::size_t value = _index_impl<
+        std::is_same_v<decay_type, typename std::decay_t<Head>>,
+        decay_type,
+        0,
+        T<Ts...>>::value;
 };
 
 #endif

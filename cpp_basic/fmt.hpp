@@ -29,6 +29,14 @@ struct ch {
     }
 };
 
+template <char ...Cs>
+struct chars{
+    template <typename Stream, typename Context>
+    static void impl(Stream& s, Context&&) {
+        ((s << Cs), ...);
+    }
+};
+
 template <typename ... Ts>
 using sb_wrap = type_list<ch<'['>, type_list<Ts...>, ch<']'>>;
 

@@ -15,8 +15,13 @@ void log_tests() {
         type_list<
             ch<'0'>, ch<'1'>, ch<'2'>, ch<'3'>>>::proc(ss, nullptr);
     std::cout << ss.str() << std::endl;
+
     ss = std::stringstream();
     conv<timestamp>::proc(ss, nullptr);
+    std::cout << ss.str() << std::endl;
+
+    ss = std::stringstream();
+    conv<chars<'a', 'b', 'c', 'd', 'e'>>::proc(ss, nullptr);
     std::cout << ss.str() << std::endl;
 
     ss = std::stringstream();
@@ -39,6 +44,8 @@ void mp_tests();
 TEST_CASE("mp_test", "[mp]") {
     mp_tests();
     REQUIRE(type_index<int, type_list<float, int>>::value == 1);
+    REQUIRE(type_index<int&, type_list<float, int>>::value == 1);
+    REQUIRE(type_index<int[], type_list<float, int*>>::value == 1);
     REQUIRE(type_index<int, type_list<float, float, int>>::value == 2);
 }
 

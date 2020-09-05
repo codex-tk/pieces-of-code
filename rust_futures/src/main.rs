@@ -35,6 +35,7 @@ use crate::custom_task::*;
 
 mod custom_future {
     use crate::custom_task::*;
+    use std::fmt::Error;
 
     pub enum Poll<T> {
         Ready(T),
@@ -45,52 +46,63 @@ mod custom_future {
         type Output;
         fn poll(&mut self, ctx: &Context) -> Poll<Self::Output>;
 
-        fn map<F,T>(self, f: F) -> Map<Self,F>
-        where
-            F: FnOnce(Self::Output)->T,
-            Self: Sized,
+        fn map<F, T>(self, f: F) -> Map<Self, F>
+            where
+                F: FnOnce(Self::Output) -> T,
+                Self: Sized,
         {
-            Map{
+            Map {
                 future: self,
                 func: Some(f),
             }
         }
 
-        fn then<F,NextFut>(self, f: F) -> Then<Self,F>
-        where
-            F: FnOnce(Self::Output)->NextFut,
-            NextFut: CustomFuture,
-            Self: Sized,
+        fn then<F, NextFut>(self, f: F) -> Then<Self, F>
+            where
+                F: FnOnce(Self::Output) -> NextFut,
+                NextFut: CustomFuture,
+                Self: Sized,
         {
-            Then{
+            Then {
                 future: self,
                 func: Some(f),
             }
         }
     }
 
-    pub trait TryFuture{
+    pub trait TryFuture {
         type Ok;
         type Error;
 
-        fn try_poll(&mut self, ctx: &Context)->Poll<Result<Self::Ok, Self::Error>>;
+        fn try_poll(&mut self, ctx: &Context) -> Poll<Result<Self::Ok, Self::Error>>;
 
-        fn and_then<Fut, F>(self, f: F) -> AndThen<Self,F>
-        where
-            F: FnOnce(Self::Ok) -> Fut,
-            Fut: CustomFuture,
-            Self: Sized
+        fn and_then<Fut, F>(self, f: F) -> AndThen<Self, F>
+            where
+                F: FnOnce(Self::Ok) -> Fut,
+                Fut: CustomFuture,
+                Self: Sized
         {
-            AndThen{
+            AndThen {
                 future: self,
-                func: Some(f)
+                func: Some(f),
+            }
+        }
+
+        fn map_err<E, F>(self, f: F) -> MapErr<Self, F>
+            where
+                F: FnOnce(Self::Error) -> E,
+                Self: Sized
+        {
+            MapErr {
+                future: self,
+                func: Some(f),
             }
         }
     }
 
-    impl<F,T,E> TryFuture for F
-    where
-        F:CustomFuture<Output=Result<T,E>>
+    impl<F, T, E> TryFuture for F
+        where
+            F: CustomFuture<Output=Result<T, E>>
     {
         type Ok = T;
         type Error = E;
@@ -114,79 +126,100 @@ mod custom_future {
         Ready(Some(val))
     }
 
-    pub struct Map<Fut,F> {
+    pub struct Map<Fut, F> {
         future: Fut,
         func: Option<F>,
     }
 
-    impl<Fut,F,T> CustomFuture for Map<Fut,F>
-    where
-        Fut: CustomFuture,
-        F: FnOnce(Fut::Output)->T,
+    impl<Fut, F, T> CustomFuture for Map<Fut, F>
+        where
+            Fut: CustomFuture,
+            F: FnOnce(Fut::Output) -> T,
     {
         type Output = T;
 
         fn poll(&mut self, ctx: &Context) -> Poll<Self::Output> {
-            match self.future.poll(ctx){
-                Poll::Ready(val)=>{
+            match self.future.poll(ctx) {
+                Poll::Ready(val) => {
                     let func = self.func.take().unwrap();
                     Poll::Ready(func(val))
-                },
+                }
                 Poll::Pending => Poll::Pending,
             }
         }
     }
 
-    pub struct Then<Fut,F> {
+    pub struct Then<Fut, F> {
         future: Fut,
         func: Option<F>,
     }
 
-    impl<Fut,F,NextFut> CustomFuture for Then<Fut,F>
-    where
-        Fut: CustomFuture,
-        F: FnOnce(Fut::Output)->NextFut,
-        NextFut: CustomFuture,
+    impl<Fut, F, NextFut> CustomFuture for Then<Fut, F>
+        where
+            Fut: CustomFuture,
+            F: FnOnce(Fut::Output) -> NextFut,
+            NextFut: CustomFuture,
     {
         type Output = NextFut::Output;
 
         fn poll(&mut self, ctx: &Context) -> Poll<Self::Output> {
-            match self.future.poll(ctx){
-                Poll::Ready(val)=>{
+            match self.future.poll(ctx) {
+                Poll::Ready(val) => {
                     let func = self.func.take().unwrap();
                     func(val).poll(ctx)
-                },
+                }
                 Poll::Pending => Poll::Pending,
             }
         }
     }
 
-    pub struct AndThen<Fut,F>{
+    pub struct AndThen<Fut, F> {
         future: Fut,
         func: Option<F>,
     }
 
-    impl<Fut,F,NextFut> CustomFuture for AndThen<Fut,F>
-    where
-        Fut: TryFuture,
-        F: FnOnce(Fut::Ok)->NextFut,
-        NextFut: TryFuture<Error=Fut::Error>
+    impl<Fut, F, NextFut> CustomFuture for AndThen<Fut, F>
+        where
+            Fut: TryFuture,
+            F: FnOnce(Fut::Ok) -> NextFut,
+            NextFut: TryFuture<Ok=Fut::Ok, Error=Fut::Error>
     {
-        type Output = Result<NextFut::Ok,NextFut::Error>;
+        type Output = Result<NextFut::Ok, NextFut::Error>;
 
         fn poll(&mut self, ctx: &Context) -> Poll<Self::Output> {
-            match self.future.try_poll(ctx){
-                Poll::Ready(Ok(val)) =>{
+            match self.future.try_poll(ctx) {
+                Poll::Ready(Ok(val)) => {
                     let f = self.func.take().unwrap();
                     f(val).try_poll(ctx)
-                },
+                }
                 Poll::Ready(Err(e)) => Poll::Ready(Err(e)),
                 Poll::Pending => Poll::Pending
             }
         }
     }
 
+    pub struct MapErr<Fut,F>{
+        future: Fut,
+        func: Option<F>,
+    }
 
+    impl<Fut,F, E> CustomFuture for MapErr<Fut,F>
+    where
+        Fut: TryFuture,
+        F: FnOnce(Fut::Error) -> E
+    {
+        type Output = Result<Fut::Ok,E>;
+
+        fn poll(&mut self, ctx: &Context) -> Poll<Self::Output> {
+            match self.future.try_poll(ctx) {
+                Poll::Ready(result) => {
+                    let f = self.func.take().unwrap();
+                    Poll::Ready(result.map_err(f))
+                }
+                Poll::Pending => Poll::Pending,
+            }
+        }
+    }
 }
 
 use crate::custom_future::*;
@@ -245,6 +278,12 @@ fn run<F>(mut f: F) -> F::Output
     })
 }
 
+#[derive(Debug)]
+struct Point<T> {
+    x: T,
+    y: T,
+}
+
 
 fn main() {
     let my_future: MyFuture = Default::default();
@@ -258,14 +297,23 @@ fn main() {
     );
     println!("Output 3: {}", run(map_future));
     let then_future = custom_future::ready(1)
-        .map(|v|v*10)
-        .then(|v| custom_future::ready(v+2));
+        .map(|v| v * 10)
+        .then(|v| custom_future::ready(v + 2));
     println!("Output 4: {}", run(then_future));
 
     let and_then_future = custom_future::ready(1)
         .map(|val| val + 1)
         .then(|val| custom_future::ready(val + 1))
-        .map(Ok::<i32,()>)
+        .map(Ok::<i32, ()>)
         .and_then(|val| custom_future::ready(Ok(val + 1)));
     println!("Output 5: {:?}", run(and_then_future));
+
+    let map_err_future = custom_future::ready(1)
+        .map(|val| val + 1)
+        .then(|val| custom_future::ready(val + 1))
+        .map(Ok)
+        .and_then(|val| custom_future::ready(Ok(val + 1)))
+        .map_err(|_: ()| 5);
+
+    println!("Output: {:?}", run(map_err_future));
 }

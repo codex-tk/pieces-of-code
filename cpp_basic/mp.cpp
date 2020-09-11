@@ -1,10 +1,11 @@
+#include "mp.hpp"
+
 #include <iostream>
 #include <sstream>
 #include <vector>
 
 #include "catch.hpp"
 #include "fmt.hpp"
-#include "mp.hpp"
 
 template <typename S, typename T>
 void print(S& s, const T& t) {

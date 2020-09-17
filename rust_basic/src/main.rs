@@ -1,102 +1,12 @@
 // https://rust-lang.github.io/async-book/04_pinning/01_chapter.html
 
+mod mybox;
+mod pin_test;
+
+use mybox::*;
+use pin_test::*;
+
 use std::pin::Pin;
-use std::marker::PhantomPinned;
-
-#[derive(Debug)]
-struct Test {
-    a: String,
-    b: *const String,
-}
-
-impl Test {
-    fn new(txt: &str) -> Self {
-        Test {
-            a: String::from(txt),
-            b: std::ptr::null(),
-        }
-    }
-
-    fn init(&mut self) {
-        self.b = &self.a
-    }
-
-    fn a(&self) -> &str {
-        &self.a
-    }
-
-    fn b(&self) -> &String {
-        unsafe { &*(self.b) }
-    }
-}
-
-
-#[derive(Debug)]
-struct StackPinTest{
-    a: String,
-    b: *const String,
-    _marker: PhantomPinned,
-}
-
-impl StackPinTest {
-    fn new(txt: &str) -> Self {
-        StackPinTest {
-            a: String::from(txt),
-            b: std::ptr::null(),
-            _marker: PhantomPinned,
-        }
-    }
-
-    fn init(self: Pin<&mut Self>) {
-        let self_ptr: *const String = &self.a;
-        let this = unsafe{
-            self.get_unchecked_mut()
-        };
-        this.b = self_ptr;
-    }
-
-    fn a(self: Pin<&Self>) -> &str {
-        &self.get_ref().a
-    }
-
-    fn b(self: Pin<&Self>) -> &String {
-        unsafe { &*(self.b) }
-    }
-}
-
-
-#[derive(Debug)]
-struct HeapPinTest{
-    a: String,
-    b: *const String,
-    _marker: PhantomPinned,
-}
-
-impl HeapPinTest {
-    fn new(txt: &str) -> Pin<Box<Self>> {
-        let t = HeapPinTest {
-            a: String::from(txt),
-            b: std::ptr::null(),
-            _marker: PhantomPinned,
-        };
-        let mut boxed = Box::pin(t);
-        let self_ptr: *const String = &boxed.as_ref().a;
-        unsafe {
-            boxed.as_mut().get_unchecked_mut().b = self_ptr
-        };
-        boxed
-    }
-
-    fn a(self: Pin<&Self>) -> &str {
-        &self.get_ref().a
-    }
-
-    fn b(self: Pin<&Self>) -> &String {
-        unsafe { &*(self.b) }
-    }
-}
-
-
 
 fn main() {
     let mut test1 = Test::new("test1");
@@ -124,4 +34,13 @@ fn main() {
 
     println!("a: {}, b: {}",test1.as_ref().a(), test1.as_ref().b());
     println!("a: {}, b: {}",test2.as_ref().a(), test2.as_ref().b());
+
+    let mybox = MyBox::new(3);
+    println!("{:?} {}", mybox, (*mybox));
+
+    let x = 5;
+    let y = MyBox::new(x);
+
+    assert_eq!(5, x);
+    assert_eq!(5, *y);
 }

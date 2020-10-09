@@ -31,6 +31,31 @@ private:
 
 */
 
+template <typename Fut, typename Fn, typename NextFut>
+class then;
+
+
+template <typename Fut, typename Fn, typename NextFut>
+class then<Fut, NextFut (*Fn)(std::decay_t<Fut>::output_type)>{
+public:
+  using output_type = typename std::decay_t<NextFut>::output_type;
+
+private:
+  Fut& _fut;
+  Fn _func;
+};
+
+template <typename T>
+class thenable{
+public:
+  using this_type = T
+  template <typename F, typename NextFut>
+
+};
+
+template <typename F, typename NextFut>
+class then{};
+
 template <typename R>
 class value_future {
   public:
@@ -50,7 +75,7 @@ class value_future {
 template <typename T>
 class add_one_future {
   public:
-    using output_type = typename std::remove_reference_t<T>::output_type;
+    using output_type = typename std::decay_t<T>::output_type;
 
     add_one_future(T&& fut)
       : _future(std::forward<T>(fut)){}
@@ -73,7 +98,9 @@ static value_future<R> ready(R &&r) {
 
 template <typename T>
 static add_one_future<T> make_add_one_future(T&& fut) {
-    return add_one_future<T>{std::forward<T>(fut)};
+    return add_one_future<T>{
+      std::forward<T>(fut)
+    };
 }
 
 } // namespace future

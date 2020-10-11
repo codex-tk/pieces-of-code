@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package services;
+
+service ConfigStore{
+    rpc Get(ConfigRequest) returns (ConfigResponse){
+        option (google.api.http) = { get: "/v1/config" };
+    }
+}
+
+message ConfigRequest{
+    string profile = 1;
+}
+
+message ConfigResponse{
+    string json_config = 1;
+}

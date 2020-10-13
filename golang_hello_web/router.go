@@ -71,3 +71,19 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	http.NotFound(w, req)
 	return
 }
+
+func (r *Router) handler() HandlerFunc {
+	return func(c *Context) {
+		for pattern, handler := range r.handlers[c.Request.Method] {
+			if ok, params := match(pattern, c.Request.URL.Path); ok {
+				for k, v := range params {
+					c.Params[k] = v
+				}
+				handler(c)
+				return
+			}
+		}
+		http.NotFound(c.ResponseWriter, c.Request)
+		return
+	}
+}
